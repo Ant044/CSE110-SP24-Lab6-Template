@@ -93,6 +93,7 @@ describe('Basic user flow for Website', () => {
 
 
     expect(buttonData).toBe("Remove from Cart");
+    await cartButton.click();
 
 
   }, 2500);
@@ -105,6 +106,7 @@ describe('Basic user flow for Website', () => {
     // Query select all of the <product-item> elements, then for every single product element
     // get the shadowRoot and query select the button inside, and click on it.
     // Check to see if the innerText of #cart-count is 20
+    
     const queried = await page.$$('product-item');
     const cartCounter = await page.$("#cart-count");
     for(let i = 0; i < queried.length; i++)
@@ -113,10 +115,8 @@ describe('Basic user flow for Website', () => {
         const cartButton = await shadowRoot.$('button');
         await cartButton.click();
       }
-
     const cartCountData = await page.evaluate(span => span.innerText, cartCounter)
     expect(cartCountData).toBe("20");
-
   }, 30000);
 
   // Check to make sure that after you reload the page it remembers all of the items in your cart
@@ -135,12 +135,12 @@ describe('Basic user flow for Website', () => {
       const shadowRoot = await item.getProperty('shadowRoot');
       const cartButton = await shadowRoot.$('button');
       // await cartButton.click();
-      const buttonData = await item.evaluate(element => element.innerText, cartButton);
+      const buttonData = await page.evaluate(element => element.innerText, cartButton);
       expect(buttonData).toBe('Remove from Cart');
     }
 
     const count = await page.$eval('#cart-count', element => element.innerText);
-    expect(count).toBe(20);
+    expect(count).toBe("20");
 
     
   }, 10000);
