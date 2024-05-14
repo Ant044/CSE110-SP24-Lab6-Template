@@ -41,32 +41,81 @@ describe('Basic user flow for Website', () => {
     const allNotes = await page.$$(".note");
     const newestNoteIndex = allNotes.length - 1;
     const newestNote = allNotes[newestNoteIndex];
-    //const newestNoteID = newestNote.id;
-    /*
-    const newestNoteID = await page.evaluate(note => {
-      return note.getAttribute('id');
-    }, newestNote);
-    */
-
-    //await page.type(`.note:nth-child(${newestNoteIndex + 2})`, "thisistext");
 
     await newestNote.click()
     
     await page.keyboard.type("thisistext");
     await page.keyboard.press("Tab");
 
-    newestNoteText = await page.evaluate(textArea => textArea.outerHTML, newestNote);
-
     const savedNotes = await page.evaluate(() => {
-      return localStorage.getItem("notesApp-notes");
+      return localStorage.getItem("stickynotes-notes");
     });
 
-    expect(savedNotes).toBe("thisistext");
+    savedNotesParsed = JSON.parse(savedNotes);
+    newestSavedNoteText = savedNotesParsed[newestNoteIndex];
+
+    expect(newestSavedNoteText.content).toBe("thisistext");
   });
 
   //Check to make sure that an old note can be edited
+it('Initial Home Page - Checking for editing an old note', async ()=> {
 
+  console.log("Checking for editing an old note.");
+
+  const addNoteButton = await page.$(".add-note");
+  await addNoteButton.click();
+  const allNotes = await page.$$(".note");
+  const editNoteIndex = 0;
+  const editNote = allNotes[editNoteIndex];
+
+  await editNote.click()
+
+  await page.keyboard.type("editing text");
+  await page.keyboard.press("Tab");
+
+  await page.waitForFunction(() => localStorage.getItem("stickynotes-notes"));
+
+  const savedNotes = await page.evaluate(() => {
+    return localStorage.getItem("stickynotes-notes");
+  });
+
+  savedNotesParsed = JSON.parse(savedNotes);
+  const newestSavedNoteText = savedNotesParsed[editNoteIndex].content;
+  
+  expect(newestSavedNoteText).toBe("editing text");
+
+});
   //Check to make sure that notes remain after reload
+  it('Initial Home Page - Checking that notes remain after reload', async() => {
+    console.log("Checking that notes remain after reload.");
+
+    const preReloadData = await page.evaluate(() => {
+      return localStorage.getItem("stickynotes-notes");
+    });
+
+    await page.reload({ waitUntil: ["networkidle0", "domcontentloaded"] });
+
+    const postReloadData = await page.evaluate(() => {
+      return localStorage.getItem("stickynotes-notes");
+    });
+
+    expect(postReloadData).toBe(preReloadData);
+  });
 
   //Check to make sure double-click to delete note works
+  it('Initial Home Page - Checking that deleting notes works', async() => {
+    console.log("Checking that notes are deleted upon double click.");
+    const allNotes = await page.$$(".note");
+    const initialNoteCount = allNotes.length;
+
+    const newestNoteIndex = allNotes.length - 1;
+    const newestNote = allNotes[newestNoteIndex];
+
+    await newestNote.click({clickCount:2})
+
+    const allNotespostDelete = await page.$$(".note");
+    const postDeleteNoteCout = allNotespostDelete.length;
+    
+    expect(postDeleteNoteCout).toBe(initialNoteCount-1)
+  });
 });
