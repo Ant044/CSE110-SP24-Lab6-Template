@@ -27,6 +27,8 @@ describe('Basic user flow for Website', () => {
         return data = item.data;
       });
     });
+
+    /*
     console.log(`Checking product item 1/${prodItemsData.length}`);
     // Make sure the title, price, and image are populated in the JSON
     firstValue = prodItemsData[0];
@@ -35,10 +37,22 @@ describe('Basic user flow for Website', () => {
     if (firstValue.image.length == 0) { allArePopulated = false; }
     // Expect allArePopulated to still be true
     expect(allArePopulated).toBe(true);
-
+    */
+   
     // TODO - Step 1
     // Right now this function is only checking the first <product-item> it found, make it so that
     // it checks every <product-item> it found
+
+    prodItemsData.forEach((data, index)=> {
+      console.log(`checking product ${index + 1} out of ${prodItemsData.length}`);
+      if (data.title.length == 0) { allArePopulated = false; }
+      if (data.price.length == 0) { allArePopulated = false; }
+      if (data.image.length == 0) { allArePopulated = false; }
+
+    });
+
+    expect(allArePopulated).toBe(true);
+
 
   }, 10000);
 
@@ -63,6 +77,24 @@ describe('Basic user flow for Website', () => {
     // Grab the shadowRoot of that element (it's a property), then query a button from that shadowRoot.
     // Once you have the button, you can click it and check the innerText property of the button.
     // Once you have the innerText property, use innerText.jsonValue() to get the text value of it
+
+    
+    const queried = await page.waitForSelector('product-item');
+    //const shadowRoot = await queried.shadowRoot;
+    const shadowRoot = await queried.getProperty('shadowRoot');
+    //const cartButton = await shadowRoot.querySelector('button');
+    const cartButton = await shadowRoot.$("button");
+    
+    await cartButton.click();
+    
+    const buttonData = await page.evaluate(button => button.innerText, cartButton)
+    // const buttonData = await(await cartButton.getProperty('text'))
+
+
+
+    expect(buttonData).toBe("Remove from Cart");
+
+
   }, 2500);
 
   // Check to make sure that after clicking "Add to Cart" on every <product-item> that the Cart
@@ -73,7 +105,19 @@ describe('Basic user flow for Website', () => {
     // Query select all of the <product-item> elements, then for every single product element
     // get the shadowRoot and query select the button inside, and click on it.
     // Check to see if the innerText of #cart-count is 20
-  }, 10000);
+    const queried = await page.$$('product-item');
+    const cartCounter = await page.$("#cart-count");
+    for(let i = 0; i < queried.length; i++)
+      {
+        const shadowRoot = await queried[i].getProperty("shadowRoot");
+        const cartButton = await shadowRoot.$('button');
+        await cartButton.click();
+      }
+
+    const cartCountData = await page.evaluate(span => span.innerText, cartCounter)
+    expect(cartCountData).toBe("20");
+
+  }, 30000);
 
   // Check to make sure that after you reload the page it remembers all of the items in your cart
   it('Checking number of items in cart on screen after reload', async () => {
@@ -82,6 +126,23 @@ describe('Basic user flow for Website', () => {
     // Reload the page, then select all of the <product-item> elements, and check every
     // element to make sure that all of their buttons say "Remove from Cart".
     // Also check to make sure that #cart-count is still 20
+
+    await page.reload({ waitUntil: ["networkidle0", "domcontentloaded"] });
+
+    const productItems = await page.$$('product-item');
+
+    for(const item of productItems){
+      const shadowRoot = await item.getProperty('shadowRoot');
+      const cartButton = await shadowRoot.$('button');
+      // await cartButton.click();
+      const buttonData = await item.evaluate(element => element.innerText, cartButton);
+      expect(buttonData).toBe('Remove from Cart');
+    }
+
+    const count = await page.$eval('#cart-count', element => element.innerText);
+    expect(count).toBe(20);
+
+    
   }, 10000);
 
   // Check to make sure that the cart in localStorage is what you expect
