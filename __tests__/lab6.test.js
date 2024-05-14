@@ -148,8 +148,12 @@ describe('Basic user flow for Website', () => {
   // Check to make sure that the cart in localStorage is what you expect
   it('Checking the localStorage to make sure cart is correct', async () => {
     // TODO - Step 5
-    // At this point he item 'cart' in localStorage should be 
+    // At this point the item 'cart' in localStorage should be 
     // '[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20]', check to make sure it is
+    const currentCart = await page.evaluate(() => {
+      return localStorage.getItem("cart");
+    });
+    expect(currentCart).toBe("[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20]")
   });
 
   // Checking to make sure that if you remove all of the items from the cart that the cart
@@ -159,6 +163,16 @@ describe('Basic user flow for Website', () => {
     // TODO - Step 6
     // Go through and click "Remove from Cart" on every single <product-item>, just like above.
     // Once you have, check to make sure that #cart-count is now 0
+    const queried = await page.$$('product-item');
+    const cartCounter = await page.$("#cart-count");
+    for(let i = 0; i < queried.length; i++)
+      {
+        const shadowRoot = await queried[i].getProperty("shadowRoot");
+        const cartButton = await shadowRoot.$('button');
+        await cartButton.click();
+      }
+    const cartCountData = await page.evaluate(span => span.innerText, cartCounter)
+    expect(cartCountData).toBe("0");
   }, 10000);
 
   // Checking to make sure that it remembers us removing everything from the cart
@@ -169,6 +183,21 @@ describe('Basic user flow for Website', () => {
     // Reload the page once more, then go through each <product-item> to make sure that it has remembered nothing
     // is in the cart - do this by checking the text on the buttons so that they should say "Add to Cart".
     // Also check to make sure that #cart-count is still 0
+
+    await page.reload({ waitUntil: ["networkidle0", "domcontentloaded"] });
+
+    const productItems = await page.$$('product-item');
+
+    for(const item of productItems){
+      const shadowRoot = await item.getProperty('shadowRoot');
+      const cartButton = await shadowRoot.$('button');
+      // await cartButton.click();
+      const buttonData = await page.evaluate(element => element.innerText, cartButton);
+      expect(buttonData).toBe('Add to Cart');
+    }
+
+    const count = await page.$eval('#cart-count', element => element.innerText);
+    expect(count).toBe("0");
   }, 10000);
 
   // Checking to make sure that localStorage for the cart is as we'd expect for the
@@ -177,5 +206,9 @@ describe('Basic user flow for Website', () => {
     console.log('Checking the localStorage...');
     // TODO - Step 8
     // At this point he item 'cart' in localStorage should be '[]', check to make sure it is
+    const currentCart = await page.evaluate(() => {
+      return localStorage.getItem("cart");
+    });
+    expect(currentCart).toBe("[]")
   });
 });
